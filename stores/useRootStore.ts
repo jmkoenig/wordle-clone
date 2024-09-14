@@ -1,8 +1,8 @@
 export interface CheckedLetterState {
   letter: string
-  index: number
-  isCorrect: boolean
-  isInWord: boolean
+  index?: number
+  isCorrectPosition?: boolean
+  isInWord?: boolean
 }
 
 export const useRootStore = defineStore('root', {
@@ -16,17 +16,30 @@ export const useRootStore = defineStore('root', {
         ['', '', '', '', ''],
         ['', '', '', '', ''],
         ['', '', '', '', '']
-      ] as string[][],
-      currentGuess: ['', '', '', '', ''] as string[],
-      allGuesses: [] as CheckedLetterState[][]
+      ],
+      currentGuess: ['', '', '', '', ''],
+      submittedWords: [] as CheckedLetterState[][]
     };
   },
   getters: {
-    firstBlankIndex: (state) => state.currentGuess.findIndex((x) => x === ''),
+    currentGuessFirstBlank: (state) => {
+      return state.currentGuess.findIndex(x => x === '');
+    },
+    isGameWon (): boolean {
+      return this.answer === this.lastGuess
+    },
+    lastGuess: (state) => {
+      if (state.submittedWords.length === 0) {
+        return '';
+      }
+
+      const lastSubmittedWordIndex = state.submittedWords.length - 1;
+      return state.submittedWords[lastSubmittedWordIndex].map(letterObj => letterObj.letter).join('');
+    },
     grid: (state) => {
-      const blankRowsIndex = state.allGuesses.length + 1;
+      const blankRowsIndex = state.submittedWords.length + 1;
       return [
-        ...state.allGuesses,
+        ...state.submittedWords,
         state.currentGuess,
         ...state.blankGrid.slice(blankRowsIndex)
       ];
@@ -34,37 +47,35 @@ export const useRootStore = defineStore('root', {
   },
   actions: {
     addLetterToCurrentGuess (letter: string) {
-      this.currentGuess[this.firstBlankIndex] = letter;
-    },
-    addGuessToAllGuesses (guess: string[]) {
-      this.resetCurrentGuess();
-      const checkedGuess = this.checkGuess(guess);
-      this.allGuesses.push(checkedGuess);
-    },
-    checkGuess (guess: string[]): CheckedLetterState[] {
-      return guess.map((letter, index) => {
-        const isCorrect = letter === this.answer[index];
-        const isInWord = this.answer.includes(letter);
-        return {
-          letter,
-          index,
-          isCorrect,
-          isInWord
-        }
-      });
-    },
-    removeLetterToCurrentGuess () {
-      if (this.firstBlankIndex === -1) {
-        this.currentGuess[this.currentGuess.length - 1] = '';
-      } else {
-        this.currentGuess[this.firstBlankIndex - 1] = '';
+      if (this.currentGuessFirstBlank === -1) {
+        return;
       }
+
+      this.currentGuess[this.currentGuessFirstBlank] = letter;
     },
-    resetCurrentGuess () {
-      this.currentGuess = ['', '', '', '', ''];
+    removeLetterFromCurrentGuess () {
+      let currIndex = this.currentGuessFirstBlank;
+      if (currIndex === -1) {
+        currIndex = this.currentGuess.length;
+      }
+
+      this.currentGuess[currIndex - 1] = '';
     },
     setAnswer (word: string) {
       this.answer = word;
+    },
+    submitGuess () {
+      const submittedWord = this.currentGuess.map((letter, index) => {
+        return {
+          letter,
+          index,
+          isCorrectPosition: letter === this.answer[index],
+          isInWord: this.answer.includes(letter)
+        }
+      });
+
+      this.submittedWords.push(submittedWord);
+      this.currentGuess = ['', '', '', '', ''];
     }
   }
 });

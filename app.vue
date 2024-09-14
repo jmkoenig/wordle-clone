@@ -2,40 +2,61 @@
   <div class="noselect">
     <GuessGrid />
     <UserKeyboard @key-clicked="handleClick" />
+    <GameCompleteModal v-show="isGameComplete" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { keyboard } from './static/keyboard';
 import { wordsShort } from './static/words-short';
 import { getRandomInt } from './utils/mathHelpers';
+
+const MAX_GUESSES = 6;
 
 const randomIndex = useState('answer_index', () => getRandomInt(0, wordsShort.length));
 
 const rootStore = useRootStore();
 
-const firstBlankIndex = computed(() => rootStore.firstBlankIndex);
-const currentGuess = computed(() => rootStore.currentGuess);
+const isGameWon = computed(() => rootStore.isGameWon);
+const isGameComplete = computed(() => isGameWon.value || rootStore.submittedWords.length === MAX_GUESSES);
 
 const handleClick = (newLetter: string) => {
-  if (newLetter === 'back') {
-    rootStore.removeLetterToCurrentGuess();
-  } else if (newLetter === 'enter') {
+  if (newLetter === 'Backspace') {
+    rootStore.removeLetterFromCurrentGuess();
+  } else if (newLetter === 'Enter') {
     handleSubmit();
-  } else if (firstBlankIndex.value > -1) {
+  } else {
     rootStore.addLetterToCurrentGuess(newLetter);
   }
 };
 
 const handleSubmit = () => {
-  if (firstBlankIndex.value > -1) {
+  if (rootStore.currentGuessFirstBlank !== -1) {
     alert('Not enough letters');
     return;
   }
   
-  rootStore.addGuessToAllGuesses(currentGuess.value);
+  rootStore.submitGuess();
+};
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Backspace' || (event.key.length === 1 && keyboard.flat().includes(event.key))) {
+    // Assume keys of length 1 are letters
+    handleClick(event.key);
+  } else if (event.key === 'Enter') {
+    handleSubmit();
+  }
 };
 
 rootStore.setAnswer(wordsShort[randomIndex.value]);
+
+onMounted(() => {
+  document.addEventListener('keydown', handleKeydown);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', handleKeydown);
+})
 </script>
 
 <style lang="scss">
