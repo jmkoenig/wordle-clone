@@ -12,7 +12,7 @@
 .game-complete-modal {
   border-radius: 8px;
   width: 80vw;
-  height: 80vw;
+  height: 80vh;
   background-color: gray;
   position: absolute;
   // Center modal to center of viewport

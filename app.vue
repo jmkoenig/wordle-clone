@@ -2,7 +2,7 @@
   <div class="noselect">
     <GuessGrid />
     <UserKeyboard @key-clicked="handleClick" />
-    <GameCompleteModal v-show="isGameComplete" />
+    <!-- <GameCompleteModal v-show="isGameComplete" /> -->
   </div>
 </template>
 
@@ -11,16 +11,17 @@ import { keyboard } from './static/keyboard';
 import { wordsShort } from './static/words-short';
 import { getRandomInt } from './utils/mathHelpers';
 
-const MAX_GUESSES = 6;
-
 const randomIndex = useState('answer_index', () => getRandomInt(0, wordsShort.length));
 
 const rootStore = useRootStore();
 
-const isGameWon = computed(() => rootStore.isGameWon);
-const isGameComplete = computed(() => isGameWon.value || rootStore.submittedWords.length === MAX_GUESSES);
+const isGameComplete = computed(() => rootStore.isGameOver);
 
 const handleClick = (newLetter: string) => {
+  if (isGameComplete.value) {
+    return;
+  }
+
   if (newLetter === 'Backspace') {
     rootStore.removeLetterFromCurrentGuess();
   } else if (newLetter === 'Enter') {
@@ -31,6 +32,10 @@ const handleClick = (newLetter: string) => {
 };
 
 const handleSubmit = () => {
+  if (isGameComplete.value) {
+    return;
+  }
+
   if (rootStore.currentGuessFirstBlank !== -1) {
     alert('Not enough letters');
     return;
@@ -40,6 +45,10 @@ const handleSubmit = () => {
 };
 
 const handleKeydown = (event: KeyboardEvent) => {
+  if (isGameComplete.value) {
+    return;
+  }
+
   if (event.key === 'Backspace' || (event.key.length === 1 && keyboard.flat().includes(event.key))) {
     // Assume keys of length 1 are letters
     handleClick(event.key);

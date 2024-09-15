@@ -5,6 +5,8 @@ export interface CheckedLetterState {
   isInWord?: boolean
 }
 
+const MAX_GUESSES = 6;
+
 const evaluateInWordPositions = (guess: CheckedLetterState[], answer: string): CheckedLetterState[] => {
   return guess.map((letterObj, index, self) => {
     const letter = letterObj.letter;
@@ -58,6 +60,7 @@ export const useRootStore = defineStore('root', {
         ['', '', '', '', '']
       ],
       currentGuess: ['', '', '', '', ''],
+      guessedLetters: [] as string[],
       submittedWords: [] as CheckedLetterState[][]
     };
   },
@@ -65,23 +68,29 @@ export const useRootStore = defineStore('root', {
     currentGuessFirstBlank: (state) => {
       return state.currentGuess.findIndex(x => x === '');
     },
-    isGameWon (): boolean {
-      return this.answer === this.lastGuess
+    dedupedGuessedLetters: (state) => {
+      return [...new Set(state.guessedLetters)];
     },
-    lastGuess: (state) => {
-      if (state.submittedWords.length === 0) {
-        return '';
+    isGameOver (): boolean {
+      return this.isGameWon || this.submittedWords.length === MAX_GUESSES
+    },
+    isGameWon (): boolean {
+      let lastGuess = ''
+      if (this.submittedWords.length === 0) {
+        return false;
       }
 
-      const lastSubmittedWordIndex = state.submittedWords.length - 1;
-      return state.submittedWords[lastSubmittedWordIndex].map(letterObj => letterObj.letter).join('');
+      const lastSubmittedWordIndex = this.submittedWords.length - 1;
+      lastGuess = this.submittedWords[lastSubmittedWordIndex].map(letterObj => letterObj.letter).join('');
+
+      return this.answer === lastGuess
     },
-    grid: (state) => {
-      const blankRowsIndex = state.submittedWords.length + 1;
+    grid (): (string|CheckedLetterState)[][] {
+      const blankRowsIndex = this.submittedWords.length + 1;
       return [
-        ...state.submittedWords,
-        state.currentGuess,
-        ...state.blankGrid.slice(blankRowsIndex)
+        ...this.submittedWords,
+        ...this.isGameOver ? [] : [this.currentGuess],
+        ...this.blankGrid.slice(blankRowsIndex)
       ];
     }
   },
@@ -105,6 +114,10 @@ export const useRootStore = defineStore('root', {
       this.answer = word;
     },
     submitGuess () {
+      // Add to list of guessed letters
+      this.guessedLetters.push(...this.currentGuess);
+
+      // Evaluate each letter in guessed word
       let submittedWord = this.currentGuess.map((letter, index) => {
         return {
           letter,

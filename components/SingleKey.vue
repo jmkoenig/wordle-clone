@@ -1,5 +1,5 @@
 <template>
-  <div class="key" @click="handleClick">
+  <div class="key" :class="{ 'key--guessed': isGuessed }" @click="handleClick">
     <span>{{ singleKey.toUpperCase() }}</span>
   </div>
 </template>
@@ -7,7 +7,11 @@
 <script setup lang="ts">
 const props = defineProps({
   singleKey: { default: '', type: String }
-})
+});
+
+const rootStore = useRootStore();
+
+const isGuessed = computed(() => rootStore.dedupedGuessedLetters.includes(props.singleKey));
 
 const emit = defineEmits<{
   'key-clicked': [singleKey: string]
@@ -15,7 +19,7 @@ const emit = defineEmits<{
 
 const handleClick = () => {
   emit('key-clicked', props.singleKey);
-}
+};
 </script>
 
 <style lang="scss">
@@ -29,5 +33,9 @@ const handleClick = () => {
   font-weight: bold;
   text-align: center;
   cursor: pointer;
+
+  &--guessed {
+    background-color: darkgray;
+  }
 }
 </style>
