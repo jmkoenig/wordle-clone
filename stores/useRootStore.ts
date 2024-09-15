@@ -51,14 +51,7 @@ export const useRootStore = defineStore('root', {
   state: () => {
     return {
       answer: '',
-      blankGrid: [
-        ['', '', '', '', ''],
-        ['', '', '', '', ''],
-        ['', '', '', '', ''],
-        ['', '', '', '', ''],
-        ['', '', '', '', ''],
-        ['', '', '', '', '']
-      ],
+      blankRow: ['', '', '', '', ''],
       currentGuess: ['', '', '', '', ''],
       guessedLetters: [] as string[],
       submittedWords: [] as CheckedLetterState[][]
@@ -85,13 +78,17 @@ export const useRootStore = defineStore('root', {
 
       return this.answer === lastGuess
     },
-    grid (): (string|CheckedLetterState)[][] {
-      const blankRowsIndex = this.submittedWords.length + 1;
-      return [
-        ...this.submittedWords,
-        ...this.isGameOver ? [] : [this.currentGuess],
-        ...this.blankGrid.slice(blankRowsIndex)
-      ];
+    grid (): (string[]|CheckedLetterState[])[] {
+      const gridArr: (string[]|CheckedLetterState[])[] = [...this.submittedWords];
+      // Only add a current guess array if the game is still going
+      if (!this.isGameOver) {
+        gridArr.push(this.currentGuess);
+      }
+      // Fill the rest of the grid with blank rows
+      for (let i = gridArr.length; i < MAX_GUESSES; i++) {
+        gridArr.push(this.blankRow);
+      }
+      return gridArr;
     }
   },
   actions: {
@@ -130,7 +127,7 @@ export const useRootStore = defineStore('root', {
       submittedWord = evaluateInWordPositions(submittedWord, this.answer);
 
       this.submittedWords.push(submittedWord);
-      this.currentGuess = ['', '', '', '', ''];
+      this.currentGuess = this.blankRow; // Reset current guess
     }
   }
 });
