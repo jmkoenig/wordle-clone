@@ -1,9 +1,49 @@
 export interface CheckedLetterState {
   letter: string
-  index?: number
-  isCorrectPosition?: boolean
+  index: number
+  isCorrectPosition: boolean
   isInWord?: boolean
 }
+
+const evaluateInWordPositions = (guess: CheckedLetterState[], answer: string): CheckedLetterState[] => {
+  return guess.map((letterObj, index, self) => {
+    const letter = letterObj.letter;
+    const letterRegex = new RegExp(letter, 'g');
+    let isInWord;
+
+    if (!answer.includes(letter)) {
+      // Easy if answer doesn't include the letter
+      isInWord = false;
+    } else if (letterObj.isCorrectPosition) {
+      // Also easy if letter is already in the correct position
+      isInWord = true;
+    } else {
+      /**
+       * Otherwise, depends on how many have already been guessed, and how many later ones are already in the correct position.
+       *  - Correct position later overrules earlier guesses.
+       *  - "In word" guesses are first come first serve.
+       * 
+       * Example: Guessing "ERROR" for answer "WORRY"
+       *  - "r" in index 2 is in correct position.
+       *  - "r" in index 1 and index 4 are both technically in the word, but index 1 would be checked first.
+       *  - numLettersInAnswer = 2
+       *  - At index 1, numCorrectLater = 1, numGuessedSoFar = 0 -> 1 + 0 = 1 < 2
+       *  - At index 2, automatic isInWord = true because isCorrectPosition = true
+       *  - At index 4, numCorrectLater = 1, numGuessedSoFar = 2 -> 1 + 2 = 3 > 2
+      */
+      const numCorrectLater = self.slice(index + 1).filter(x => letter === x.letter && x.isCorrectPosition).length;
+      const numGuessedSoFar = self.slice(0, index).filter(x => letter === x.letter).length;
+      const numLettersInAnswer = (answer.match(letterRegex) || []).length;
+
+      isInWord = numCorrectLater + numGuessedSoFar < numLettersInAnswer;
+    }
+
+    return {
+      ...letterObj,
+      isInWord
+    };
+  });
+};
 
 export const useRootStore = defineStore('root', {
   state: () => {
@@ -65,14 +105,16 @@ export const useRootStore = defineStore('root', {
       this.answer = word;
     },
     submitGuess () {
-      const submittedWord = this.currentGuess.map((letter, index) => {
+      let submittedWord = this.currentGuess.map((letter, index) => {
         return {
           letter,
           index,
-          isCorrectPosition: letter === this.answer[index],
-          isInWord: this.answer.includes(letter)
+          isCorrectPosition: letter === this.answer[index] // Can set this easily
         }
       });
+
+      // isInWord is more complicated
+      submittedWord = evaluateInWordPositions(submittedWord, this.answer);
 
       this.submittedWords.push(submittedWord);
       this.currentGuess = ['', '', '', '', ''];
