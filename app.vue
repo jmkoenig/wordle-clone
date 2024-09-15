@@ -49,7 +49,7 @@ const handleKeydown = (event: KeyboardEvent) => {
     return;
   }
 
-  if (event.key === 'Backspace' || (event.key.length === 1 && keyboard.flat().includes(event.key))) {
+  if (event.key === 'Backspace' || (event.key.length === 1 && keyboard.flat().includes(event.key.toLowerCase()))) {
     // Assume keys of length 1 are letters
     handleClick(event.key);
   } else if (event.key === 'Enter') {
