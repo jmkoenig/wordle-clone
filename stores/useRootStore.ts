@@ -51,7 +51,6 @@ export const useRootStore = defineStore('root', {
   state: () => {
     return {
       answer: '',
-      blankRow: ['', '', '', '', ''],
       currentGuess: ['', '', '', '', ''],
       guessedLetters: [] as string[],
       submittedWords: [] as CheckedLetterState[][]
@@ -86,7 +85,7 @@ export const useRootStore = defineStore('root', {
       }
       // Fill the rest of the grid with blank rows
       for (let i = gridArr.length; i < MAX_GUESSES; i++) {
-        gridArr.push(this.blankRow);
+        gridArr.push(['', '', '', '', '']);
       }
       return gridArr;
     }
@@ -127,7 +126,7 @@ export const useRootStore = defineStore('root', {
       submittedWord = evaluateInWordPositions(submittedWord, this.answer);
 
       this.submittedWords.push(submittedWord);
-      this.currentGuess = this.blankRow; // Reset current guess
+      this.currentGuess = ['', '', '', '', '']; // Reset current guess
     }
   }
 });
